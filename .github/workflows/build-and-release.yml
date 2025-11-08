@@ -24,10 +24,10 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: 🔧 Setup .NET 6.0
+    - name: 🔧 Setup .NET 8.0
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '6.0.x'
+        dotnet-version: '8.0.x'
 
     - name: 🔨 Setup MSBuild
       uses: microsoft/setup-msbuild@v2
@@ -50,24 +50,24 @@ jobs:
       with:
         name: INStudioFiles-${{ matrix.configuration }}
         path: |
-          bin/Release/net6.0-windows/
-          !bin/Release/net6.0-windows/*.pdb
+          bin/Release/net8.0-windows/
+          !bin/Release/net8.0-windows/*.pdb
         retention-days: 30
 
   publish:
     name: 📦 Publish Self-Contained
     runs-on: windows-latest
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     
     steps:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔧 Setup .NET 6.0
+    - name: 🔧 Setup .NET 8.0
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '6.0.x'
+        dotnet-version: '8.0.x'
 
     - name: 📦 Publish Windows x64 (Self-Contained)
       run: |
@@ -84,14 +84,14 @@ jobs:
     - name: 📊 Display publish info
       run: |
         echo "✅ Publish completed!"
-        $size = (Get-Item "bin/Release/net6.0-windows/win-x64/publish/INStudioFiles.exe").Length / 1MB
+        $size = (Get-Item "bin/Release/net8.0-windows/win-x64/publish/INStudioFiles.exe").Length / 1MB
         echo "📦 Executable size: $([math]::Round($size, 2)) MB"
 
     - name: 📤 Upload published executable
       uses: actions/upload-artifact@v4
       with:
         name: INStudioFiles-Standalone-x64
-        path: bin/Release/net6.0-windows/win-x64/publish/
+        path: bin/Release/net8.0-windows/win-x64/publish/
         retention-days: 90
 
   release:
@@ -104,10 +104,10 @@ jobs:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔧 Setup .NET 6.0
+    - name: 🔧 Setup .NET 8.0
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '6.0.x'
+        dotnet-version: '8.0.x'
 
     - name: 📦 Publish Release Build
       run: |
@@ -123,7 +123,7 @@ jobs:
 
     - name: 📦 Create ZIP archive
       run: |
-        $publishPath = "bin/Release/net6.0-windows/win-x64/publish"
+        $publishPath = "bin/Release/net8.0-windows/win-x64/publish"
         $version = if ("${{ github.ref_name }}" -like "v*") { "${{ github.ref_name }}" } else { "v1.1.0-build-${{ github.run_number }}" }
         Compress-Archive -Path "$publishPath/*" -DestinationPath "INStudioFiles-$version-win-x64.zip"
         echo "✅ ZIP created: INStudioFiles-$version-win-x64.zip"
@@ -188,10 +188,10 @@ jobs:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔧 Setup .NET 6.0
+    - name: 🔧 Setup .NET 8.0
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '6.0.x'
+        dotnet-version: '8.0.x'
 
     - name: 📦 Publish Release Build
       run: |
@@ -207,7 +207,7 @@ jobs:
 
     - name: 📦 Create ZIP archive
       run: |
-        $publishPath = "bin/Release/net6.0-windows/win-x64/publish"
+        $publishPath = "bin/Release/net8.0-windows/win-x64/publish"
         $version = "v1.1.0-dev-${{ github.run_number }}"
         Compress-Archive -Path "$publishPath/*" -DestinationPath "INStudioFiles-$version-win-x64.zip"
         echo "✅ ZIP created: INStudioFiles-$version-win-x64.zip"
@@ -271,10 +271,10 @@ jobs:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔧 Setup .NET 6.0
+    - name: 🔧 Setup .NET 8.0
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '6.0.x'
+        dotnet-version: '8.0.x'
 
     - name: 📊 Code Metrics
       run: |
