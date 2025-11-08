@@ -9,6 +9,11 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+  pull-requests: read
+
 jobs:
   build:
     name: 🔨 Build Application
