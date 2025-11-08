@@ -1,0 +1,224 @@
+name: 🚀 Build & Release IN Studio Files
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: 🔨 Build Application
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🔧 Setup .NET 6.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: 🔨 Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: 📦 Restore dependencies
+      run: dotnet restore AutoCopy.sln
+
+    - name: 🏗️ Build solution
+      run: dotnet build AutoCopy.sln --configuration ${{ matrix.configuration }} --no-restore
+
+    - name: 📊 Display build info
+      run: |
+        echo "✅ Build completed successfully!"
+        echo "Configuration: ${{ matrix.configuration }}"
+        echo "Project: IN Studio Files v1.1"
+
+    - name: 📤 Upload build artifacts (Release only)
+      if: matrix.configuration == 'Release'
+      uses: actions/upload-artifact@v4
+      with:
+        name: INStudioFiles-${{ matrix.configuration }}
+        path: |
+          bin/Release/net6.0-windows/
+          !bin/Release/net6.0-windows/*.pdb
+        retention-days: 30
+
+  publish:
+    name: 📦 Publish Self-Contained
+    runs-on: windows-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔧 Setup .NET 6.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: 📦 Publish Windows x64 (Self-Contained)
+      run: |
+        dotnet publish AutoCopy.csproj `
+          -c Release `
+          -r win-x64 `
+          --self-contained `
+          -p:PublishSingleFile=true `
+          -p:IncludeNativeLibrariesForSelfExtract=true `
+          -p:EnableCompressionInSingleFile=true `
+          -p:DebugType=None `
+          -p:DebugSymbols=false
+
+    - name: 📊 Display publish info
+      run: |
+        echo "✅ Publish completed!"
+        $size = (Get-Item "bin/Release/net6.0-windows/win-x64/publish/INStudioFiles.exe").Length / 1MB
+        echo "📦 Executable size: $([math]::Round($size, 2)) MB"
+
+    - name: 📤 Upload published executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: INStudioFiles-Standalone-x64
+        path: bin/Release/net6.0-windows/win-x64/publish/
+        retention-days: 90
+
+  release:
+    name: 🎉 Create GitHub Release
+    runs-on: windows-latest
+    needs: publish
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔧 Setup .NET 6.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: 📦 Publish Release Build
+      run: |
+        dotnet publish AutoCopy.csproj `
+          -c Release `
+          -r win-x64 `
+          --self-contained `
+          -p:PublishSingleFile=true `
+          -p:IncludeNativeLibrariesForSelfExtract=true `
+          -p:EnableCompressionInSingleFile=true `
+          -p:DebugType=None `
+          -p:DebugSymbols=false
+
+    - name: 📦 Create ZIP archive
+      run: |
+        $publishPath = "bin/Release/net6.0-windows/win-x64/publish"
+        $version = "${{ github.ref_name }}"
+        Compress-Archive -Path "$publishPath/*" -DestinationPath "INStudioFiles-$version-win-x64.zip"
+        echo "✅ ZIP created: INStudioFiles-$version-win-x64.zip"
+
+    - name: 📊 Generate Release Notes
+      id: release_notes
+      run: |
+        $notes = @"
+        # 🎨 IN Studio Files ${{ github.ref_name }}
+        
+        ## ✨ What's New
+        - Modern animated UI with 132 animations
+        - Dark/Light theme system (66 colors each)
+        - Multi-threaded file copy (1-10 threads)
+        - Compact progress dashboard
+        - File verification system
+        - Resume capability
+        - 40+ RAW format support
+        
+        ## 🔧 Improvements
+        - Memory leak fixed (proper resource disposal)
+        - Smooth scrolling everywhere
+        - Equal-sized buttons
+        - Professional UI polish
+        
+        ## 📦 Installation
+        1. Download ``INStudioFiles-${{ github.ref_name }}-win-x64.zip``
+        2. Extract to any folder
+        3. Run ``INStudioFiles.exe``
+        4. No .NET installation required (self-contained)
+        
+        ## 💻 System Requirements
+        - Windows 10/11 (x64)
+        - 100 MB disk space
+        
+        ## 🐛 Bug Reports
+        Please report issues on GitHub Issues page.
+        "@
+        
+        $notes | Out-File -FilePath release_notes.md -Encoding utf8
+        echo "✅ Release notes generated"
+
+    - name: 🎉 Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          INStudioFiles-${{ github.ref_name }}-win-x64.zip
+          release_notes.md
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  code-quality:
+    name: 🔍 Code Quality Check
+    runs-on: windows-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔧 Setup .NET 6.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: 📊 Code Metrics
+      run: |
+        echo "═══════════════════════════════════════"
+        echo "📊 CODE METRICS"
+        echo "═══════════════════════════════════════"
+        
+        $xamlLines = (Get-Content MainWindow.xaml).Count
+        $csLines = (Get-Content MainWindow.xaml.cs).Count
+        $totalFiles = (Get-ChildItem -Recurse -Include *.cs,*.xaml | Where-Object { $_.FullName -notmatch "\\obj\\|\\bin\\" }).Count
+        
+        echo "📄 XAML: $xamlLines lines"
+        echo "💻 C#: $csLines lines"  
+        echo "📁 Total files: $totalFiles"
+        echo ""
+        echo "✅ Code metrics collected!"
+
+    - name: 🔍 Check for common issues
+      run: |
+        echo "🔍 Checking for potential issues..."
+        
+        # Check for TODO comments
+        $todos = Select-String -Path "*.cs" -Pattern "TODO|FIXME|HACK" -ErrorAction SilentlyContinue
+        if ($todos) {
+          echo "⚠️ Found TODO/FIXME comments:"
+          $todos | Select-Object -First 5
+        } else {
+          echo "✅ No TODO/FIXME comments found"
+        }
+        
+        echo ""
+        echo "✅ Quality check complete!"
