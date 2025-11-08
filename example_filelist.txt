@@ -1,0 +1,10 @@
+photo1.jpg
+photo2.jpg
+document.pdf
+image.png
+video.mp4
+presentation.pptx
+spreadsheet.xlsx
+report.docx
+diagram.svg
+archive.zip

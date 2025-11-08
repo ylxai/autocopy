@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>INStudioFiles</AssemblyName>
+    <RootNamespace>AutoCopy</RootNamespace>
+    <AssemblyTitle>IN Studio Files</AssemblyTitle>
+    <AssemblyDescription>Professional File Management Suite for Creative Studios</AssemblyDescription>
+    <AssemblyProduct>IN Studio Files</AssemblyProduct>
+    <AssemblyCompany>IN Studio</AssemblyCompany>
+    <AssemblyCopyright>Copyright © 2024 IN Studio</AssemblyCopyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

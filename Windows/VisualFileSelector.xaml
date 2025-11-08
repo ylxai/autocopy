@@ -1,0 +1,317 @@
+<Window x:Class="AutoCopy.Windows.VisualFileSelector"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="📸 Visual File Selector"
+        Height="700" Width="1100"
+        MinHeight="600" MinWidth="900"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="5,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        
+        <Style TargetType="TextBlock" x:Key="HeaderStyle">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Padding="20,15" Background="{DynamicResource HeaderBackgroundBrush}" 
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <StackPanel>
+                    <TextBlock FontSize="22" FontWeight="Bold" Foreground="{DynamicResource AccentTextBrush}">
+                        <Run Text="📸"/>
+                        <Run Text="Visual File Selector"/>
+                    </TextBlock>
+                    <TextBlock Text="Browse and select files visually with thumbnails" 
+                              FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,5,0,0"/>
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding StatusMessage}" 
+                              FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" 
+                              VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <ProgressBar Width="100" Height="20" 
+                                IsIndeterminate="True"
+                                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Source Folder Selection -->
+        <Border Grid.Row="1" Background="White" Padding="15,10" 
+                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="Source:" 
+                          VerticalAlignment="Center" Style="{StaticResource HeaderStyle}"/>
+                <TextBox Grid.Column="1" Text="{Binding SourceFolder}" 
+                        IsReadOnly="True" VerticalAlignment="Center" 
+                        Background="#F9F9F9" Padding="8"/>
+                <Button Grid.Column="2" Content="Browse..." 
+                       Click="BtnBrowse_Click" MinWidth="100"/>
+            </Grid>
+        </Border>
+
+        <!-- Filter Bar -->
+        <Border Grid.Row="2" Background="White" Padding="15,10" 
+                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Filter Controls -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox Grid.Column="0" 
+                            Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                            VerticalAlignment="Center" Padding="8" Margin="0,0,10,0">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value="">
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <VisualBrush Stretch="None" AlignmentX="Left">
+                                                    <VisualBrush.Visual>
+                                                        <TextBlock Text="🔍 Search filename..." 
+                                                                  Foreground="#999" Margin="8,0"/>
+                                                    </VisualBrush.Visual>
+                                                </VisualBrush>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+
+                    <ComboBox Grid.Column="1" Width="120" Margin="0,0,10,0"
+                             SelectedItem="{Binding SelectedDateFilter}">
+                        <ComboBoxItem Content="All Dates" IsSelected="True"/>
+                        <ComboBoxItem Content="Today"/>
+                        <ComboBoxItem Content="Last 7 days"/>
+                        <ComboBoxItem Content="Last 30 days"/>
+                    </ComboBox>
+
+                    <ComboBox Grid.Column="2" Width="120" Margin="0,0,10,0"
+                             SelectedItem="{Binding SelectedSizeFilter}">
+                        <ComboBoxItem Content="All Sizes" IsSelected="True"/>
+                        <ComboBoxItem Content="> 10 MB"/>
+                        <ComboBoxItem Content="> 50 MB"/>
+                    </ComboBox>
+
+                    <ComboBox Grid.Column="3" Width="120"
+                             SelectedItem="{Binding SelectedTypeFilter}">
+                        <ComboBoxItem Content="All Types" IsSelected="True"/>
+                        <ComboBoxItem Content="RAW Only"/>
+                        <ComboBoxItem Content="JPEG Only"/>
+                        <ComboBoxItem Content="Video"/>
+                    </ComboBox>
+                </Grid>
+
+                <!-- Bulk Actions & Statistics -->
+                <Grid Grid.Row="1" Margin="0,10,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="✓ Select All" 
+                               Command="{Binding SelectAllCommand}"/>
+                        <Button Content="✗ None" 
+                               Command="{Binding SelectNoneCommand}"/>
+                        <Button Content="⟲ Inverse" 
+                               Command="{Binding InverseSelectionCommand}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <TextBlock VerticalAlignment="Center" Margin="0,0,20,0">
+                            <Run Text="{Binding SelectedCount, Mode=OneWay}" FontWeight="Bold" Foreground="#667eea"/>
+                            <Run Text=" / "/>
+                            <Run Text="{Binding TotalCount, Mode=OneWay}"/>
+                            <Run Text=" selected"/>
+                        </TextBlock>
+                        <TextBlock VerticalAlignment="Center">
+                            <Run Text="📦 "/>
+                            <Run Text="{Binding TotalSelectedSizeFormatted, Mode=OneWay}" FontWeight="Bold" Foreground="#4CAF50"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- File DataGrid -->
+        <DataGrid Grid.Row="3" 
+                 ItemsSource="{Binding FilesView}"
+                 AutoGenerateColumns="False"
+                 CanUserAddRows="False"
+                 CanUserDeleteRows="False"
+                 SelectionMode="Single"
+                 GridLinesVisibility="Horizontal"
+                 HeadersVisibility="Column"
+                 RowHeight="70"
+                 VirtualizingPanel.IsVirtualizing="True"
+                 VirtualizingPanel.VirtualizationMode="Recycling"
+                 ScrollViewer.CanContentScroll="True"
+                 Background="White"
+                 BorderBrush="#E0E0E0"
+                 BorderThickness="0">
+
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Background" Value="#F5F5F5"/>
+                    <Setter Property="Foreground" Value="#333"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Padding" Value="10,8"/>
+                    <Setter Property="BorderBrush" Value="#E0E0E0"/>
+                    <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
+
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="White"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#F0F4FF"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+
+            <DataGrid.Columns>
+                <!-- Checkbox Column -->
+                <DataGridTemplateColumn Header="✓" Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Thumbnail Column -->
+                <DataGridTemplateColumn Header="Preview" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Width="60" Height="60" 
+                                   Background="#F0F0F0"
+                                   CornerRadius="5"
+                                   BorderBrush="#DDD"
+                                   BorderThickness="1">
+                                <Grid>
+                                    <Image Source="{Binding Thumbnail}"
+                                          Stretch="UniformToFill"
+                                          Visibility="{Binding IsThumbnailLoading, Converter={StaticResource BoolToVis}, ConverterParameter=Inverse}"/>
+                                    <TextBlock Text="..." 
+                                              FontSize="20" 
+                                              Foreground="#999"
+                                              HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"
+                                              Visibility="{Binding IsThumbnailLoading, Converter={StaticResource BoolToVis}}"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Filename -->
+                <DataGridTextColumn Header="File Name" Width="*" 
+                                   Binding="{Binding FileName}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Padding" Value="5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+
+                <!-- Extension -->
+                <DataGridTextColumn Header="Type" Width="80" 
+                                   Binding="{Binding FileExtension}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Padding" Value="5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="TextAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+
+                <!-- Size -->
+                <DataGridTextColumn Header="Size" Width="100" 
+                                   Binding="{Binding FileSizeFormatted}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Padding" Value="5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="TextAlignment" Value="Right"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+
+                <!-- Date Modified -->
+                <DataGridTextColumn Header="Date Modified" Width="150" 
+                                   Binding="{Binding DateModified, StringFormat=yyyy-MM-dd HH:mm}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Padding" Value="5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Action Buttons -->
+        <Border Grid.Row="4" Background="White" Padding="15,10" 
+                BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="📋 Export to File List" 
+                           Click="BtnExportToFileList_Click"
+                           MinWidth="150"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Cancel" 
+                           Click="BtnCancel_Click"
+                           MinWidth="100"/>
+                    <Button Content="▶️ Use Selected Files" 
+                           Click="BtnUseSelected_Click"
+                           MinWidth="180"
+                           Background="#4CAF50"
+                           Foreground="White"
+                           FontWeight="Bold"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
